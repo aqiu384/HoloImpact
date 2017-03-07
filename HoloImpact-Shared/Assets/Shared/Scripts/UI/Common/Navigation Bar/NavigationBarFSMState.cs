@@ -1,0 +1,1 @@
+﻿public class NavigationBarFSMState : FSMState<NavigationBarState, NavigationBarTransition> { }

@@ -1,0 +1,1 @@
+﻿public class MapNavigationFSMState : FSMState<MapNavigationState, MapNavigationState> { }

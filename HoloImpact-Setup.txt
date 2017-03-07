@@ -1,0 +1,212 @@
++============================+
+| HoloImpact Developer Setup |
++============================+
+
++========================================+
+|           Table of Contents            |
+| Description ..................... #A.1 |
+| Requirements .................... #A.2 |
+| Installation .................... #A.3 |
+| Installation .................... #A.3 |
++========================================+
+
++===================+
+| #A.3 Installation |
++===================+
+
++============================+
+| #A.3.1 Unity Project Setup |
++============================+
+
+1. Create three new Unity projects: HoloImpact-Shared, HoloImpact-Client, and HoloImpact-Server.
+2. Extract HoloImpact-Shared.zip, HoloImpact-Client.zip, and HoloImpact-Server.zip to their corresponding projects directories.
+  A. Each ZIP file contains an Asset and ProjectSettings directory, which should overwrite the existing Asset and ProjectSettings created in the new Unity projects.
+3. Create an NTFS junction point from "HoloImpact-Shared\Assets\Shared" to the Asset folders for HoloImpact-Client and HoloImpact-Server.
+  A. Command for HoloImpact-Client: mklink /J "C:\path\to\HoloImpact-Client\Assets\HoloImpact-Shared" "C:\path\to\HoloImpact-Shared\Assets\Shared"
+  B. Command for HoloImpact-Server: mklink /J "C:\path\to\HoloImpact-Server\Assets\HoloImpact-Shared" "C:\path\to\HoloImpact-Shared\Assets\Shared"
+
++=============================+
+| #A.3.2 App Testing in Unity |
++=============================+
+
+1. Start "Test-Impact-Hub.exe"
+  A. This application sends out a constant stream of mock IMPACT vehicle track updates.
+2. Load the HoloImpact-Server project in Unity.
+  A. Load the HoloImpact-Server scene located in the root Assets directory.
+  B. Inside the game click the "Host" button to start the Hololens server endpoint.
+    i. After a successful connection the game will load up the terrain data and spawn vehicles on the map.
+3. Load the HoloImpact-Client project in a separate Unity instance.
+  A. Load the HoloImpact-Client scene located in the root Assets directory.
+  B. Inside the game click the "Client" button to connect to the HoloImpact Server.
+    i. After a successful connection the client should replicate the terrain and vehicle data seen on the host instance.
+
++===================================+
+| #A.3.2 HoloImpact-Client Controls |
++===================================+
+
+1. Emulating Hololens Input
+  A. Right-click and drag to gaze around the scene.
+  B. WASD keys to move forward-backward/left-right.
+  C. Hold space + Left-click to simulate tap gesture.
+  B. Hold space + Left-click and drag to simulate manipulation gesture.
+2. Map Navigation
+  A. Switch modes using the upper-left menu (default drag).
+    i. Place: Pick up and move map window to another room location.
+	ii. Drag: Pan around terrain inside the map window.
+	iii. Zoom: Change size of terrain inside the map window.
+	iv. Scale: Change size of map window.
+  B. All Map Navigation manipulations are activated by looking at the terrain and using the manipulation gesture.
+    i Place + Drag: Gaze at terrain, grab, move to desired position, then release.
+	ii. Zoom + Scale: Gaze at terrain, grab, move left-right to change scale, then release.
+3. Vehicle Interaction
+  A. Switch modes using the upper-right menu.
+    i. Default: Show bubble around vehicle.
+	ii. Jump To: Center terrain around vehicle's current location.
+	iii. Track: Unimplemented.
+	iv. More Info: Spawn information popup that follows vehicle.
+  B. Interact with vehicles by selecting a mode, then targetting a vehicle by gazing at it or choosing it from the center menu.
+  C. After a vehicles has been selected an interacted with the Vehicle Interaction mode is reverted to default.
+
++===============================+
+| #A.4 Design Concepts Overview |
++===============================+
+
++===============================================+
+| #A.4.1 Finite State Machines (Unity Animator) |
++===============================================+
+
+1. Problem: Synchronizing state across different input modules.
+  A. Network Connection Status Example: Need to synchronize network connection status between network-dependent components.
+    i. Network Manager: Manages UNET connection operations.
+	  a. Disconnected: No network connection.
+	  b. Client Connecting: Started connection, waiting for given server to respond.
+	  c. Client Connected: Server responded after connection requeust.
+	  d. Host Connected: Started both server and local client connection.
+	ii. Network Connection Popup: Display current connection status and buttons that trigger changes in connection state.
+	iii. Voice Command Module (Possible Future Feature): Change current connection state.
+  B. Map Navigation Mode Example: Need to synchronize map navigation state across all listening components.
+    i. Map Terrain Collider: Holds the actual manipulations to change the map
+	  a. Placing: Translate map world coordinates with hand dragging input.
+	  b. Panning: Translate terrain local coordinates inside map window with hand dragging input.
+	  c. Zooming: Scale terrain local coordinates inside map window with hand zooming input.
+	  d. Scaling: Scale map world coordinates with hand zooming input.
+	ii. Map Navigation Popup: Change/Display current map navigation modes.
+	iii. Voice Commands Module (Not Implemented): Change current map navigation mode.
+  C. Above examples need the same set of common functionality.
+    i. Remaining up-to-date with the current state.
+	ii. Triggering only valid transitions that change the current state.
+2. Solution: Extend Unity's built-in Mechanim state machines to support generic FSMs.
+  A. Enum set of valid states.
+    i. All listeners can register callbacks and receive updates when given state is entered or exited.
+  B. Enum set of valid transitions.
+    i. All listeners can call underlying FSM to undergo given transition.
+  C. Unity provide built-in visualiziation of these FSMs.
+    i. Simple to comprehend and add new transitions.
+	ii. View state of FSM while debugging in Unity.
+
++========================================+
+| #A.4.2 Unity Networking (UNET) Support |
++========================================+
+
+1. Problem: Disjoint between technologies available to the Hololens and main IMPACT Hub.
+  A. Windows UWP on Hololens.
+    i. Does not support necessary ZeroMQ client to subscribe to IMPACT Hub datastream.
+	ii. Commonplace networking solutions require rebuilding custom protocols from scratch.
+  B. Standalone Build on Windows.
+    i. Cannot build with any HoloToolkit components, including GGV input module.
+2. Solutions: Network shared Simulation Model over UNET between Hololens Client and Standalone Server projects.
+  A. Simulation Model.
+    i. Holds common functionality between client and server.
+	ii. Ensures changes to underlying map model are included in both client and server builds.
+  B. Standalone Server.
+    i. Serves all fully-compatible data endpoint to the IMPACT Hub through ZeroMQ.
+	ii. Translates simulation updates to map model changes and syncrhonizes state to all clients through UNET.
+  C. Hololens Client.
+    i. Receives updated map model from standalone server through UNET.
+	ii. Requires only UNET instead of custom-build network solutions.
+	iii. Attaches Hololens-specific input functionality to the simulation model.
+	iv. Bonus of allowing multiple Hololenses to share in the same simulated map.
+3. UNET-specific Considerations.
+  A. Does not preserve Unity Gameobject hiearchy.
+    i. Spawned objects (e.g. vehicles) added to root hiearchy instead of parented by terrain map.
+	ii. Solution: Hiearchy-path is recorded on server and copied over when object is started on clients.
+  B. Cannot attach platform-specific components to networked prefabs.
+    i. Vehicle prefab requires tap-input on the Hololens and mouse-clicks on the server.
+	ii. Solution: Attach placeholder components to all network prefabs instead.
+	  a. Placeholder has input configuration only, no other code.
+	  b. Once spawned placeholder requests platform-specific replacement, copies over configuration, and removes itself.
+	  c. Lets Hololens and standalone build provide different input modes for the same requirements.
+
++===============================+
+| #A.4.3 Unity Terrain Modeling |
++===============================+
+
+1. HoloImpact uses Unity's built-in terrain object to model 3D-maps.
+2. Advantages.
+  A. Optimized for Unity Engine.
+  B. Eliminates the need for large, pre-built mesh landscape models.
+  C. Automatically generates collider that allows ground objects to stick to the surface.
+  B. Requires only raw heightmap data to syncrhonize data.
+3. Limitations.
+  A. Unity optimizations lock terrain into a single, global rotation.
+    i. Workaround: Disable map rotation through hand manipulations.
+	  a. Require use to physically walk around map (moving the camera) instead.
+  B. Terrain is invariant to parent scaling.
+    i. Workaround: Add component that listens for resize commands and manipulate terrain dimensions directly.
+  C. Terrain heightmap is not automatically syncrhonized across UNET by spawning terrain data copies.
+    i. Workaround: Setup independent map tile server instead.
+	  a. Server synchronizes the location of each tile's SW corner.
+	  b. Client reads the SW corner value and makes a WWW request for the corresponding heightmap.
+
++======================+
+| #A.4.4 3D Map Window |
++======================+
+
+1. 3D Map Window Requirements.
+  A. Terrain.
+    i. Only the region within the window is visualized and collidable.
+	ii. Extrude bottom as well to have a clear-cut manipulation target.
+  B. Map Items.
+    i. Only items with their primary model within the window should be visualized and interactable.
+	ii. Self-propelled items (e.g. vehicles) toggle their own visibility when entering and exiting the window.
+2. Implementation.
+  A. Visualization: Requires three seperate camera passes.
+    i. Simulation Map Camera: Four passes to draw using stencil buffer shaders.
+	  a. Terrain + Map Items: Use default shaders.
+	  b. 3D Map Window: Draw invisible and fill stencil buffer using inverted normals to determine inside of window.
+	  c. Extruded Map-base Cylinder: Draw solid color and fill stencil buffer using normals to determine inside of base.
+	  d. Black Skybox: Draw wherever stencil buffer is zero and reset buffer.
+	ii. Default Hololens Camera: Draw everything but the cursor (UI, non-map holograms).
+	iii. Cursor Camera: Determine correct location using raycast into scene, but always draw on top of everything else.
+  B. Colliders.
+    i. Terrain: Disable default terrain collider for everything outside map objects, use hidden cylinder collider to interact instead.
+	ii. Map Items: Disable upon exiting map window, reenable when it crosses the border again.
+
++====================================+
+| #A.4.5 Terrain and Map Tile Images |
++====================================+
+
+1. Feature: Overlay map tile images on top of 3D terrain.
+  A. 3D Terrain Data Source: Shuttle Radar Topography Mission (SRTM).
+    i. Source: http://dwtkns.com/srtm/
+	ii: Format: Binary HGT covering 1-degree lat-long boxes with 1 arc-second resolution.
+  B. Map Tile Image Data Source: Bing Maps API.
+    i. Source: https://msdn.microsoft.com/en-us/library/ff701716.aspx
+	ii. Format: 256 x 256 PNG indexed by quadkeys.
+	iii. Quadkeys Description: https://msdn.microsoft.com/en-us/library/bb259689.aspx
+2. Problem: Combining different formats and scaling units for Unity use.
+  A. Convert SRTM HGT to Unity-accepted RAW format for terrain heightmap import.
+    i. Solution: Use Geospatial Data Abstraction Library (GDAL) for format conversions.
+	ii. Source: https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries
+	iii. Problem: GDAL package is targeted at >= .NET 4.0.
+	iv. Naive Workaround: Call standalone GDAL executable directly (requires independent installation).
+  B. Find SRTM subpatch for corresponding Bing Maps tile.
+    i. Solution: Calculate lat-long bounding box for each Bing tile, then cut out corresponding area from SRTM.
+	ii. Use GDAL for cropping operations.
+  C. Choose area of interest at runtime and download corresponding tiles.
+    i. Proposed Solution: Server handles spawning all map tiles.
+	ii. Check local map tile server to see if patch exists, else create new entry using above steps.
+	iii. Server will only spawn map tile after corresponding tile data becomes available.
+  D. Bing map tile coordinates use a different format than IMPACT lat-long entries.
+    i. Proposed Solution: Convert vehicle coordinates and velocity to Bing map units.
+	ii. Scale varies depending on area of interest.

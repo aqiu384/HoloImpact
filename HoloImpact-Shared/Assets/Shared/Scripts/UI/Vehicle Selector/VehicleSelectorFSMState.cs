@@ -1,0 +1,1 @@
+﻿public class VehicleSelectorFSMState : FSMState<VehicleSelectorState, VehicleSelectorTransition> { }
