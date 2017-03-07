@@ -7,8 +7,19 @@
 | Description ..................... #A.1 |
 | Requirements .................... #A.2 |
 | Installation .................... #A.3 |
-| Installation .................... #A.3 |
+| Design Concepts ................. #A.4 |
 +========================================+
+
++=================+
+| #A.1 Description |
++=================+
+
++===================+
+| #A.2 Requirements |
++===================+
+
+1. Unity 5.5.0
+2. Geospatial Data Abstraction Library
 
 +===================+
 | #A.3 Installation |
@@ -18,13 +29,11 @@
 | #A.3.1 Unity Project Setup |
 +============================+
 
-1. Create three new Unity projects: HoloImpact-Shared, HoloImpact-Client, and HoloImpact-Server.
-2. Extract HoloImpact-Shared.zip, HoloImpact-Client.zip, and HoloImpact-Server.zip to their corresponding projects directories.
-  A. Each ZIP file contains an Asset and ProjectSettings directory, which should overwrite the existing Asset and ProjectSettings created in the new Unity projects.
-3. Create an NTFS junction point from "HoloImpact-Shared\Assets\Shared" to the Asset folders for HoloImpact-Client and HoloImpact-Server.
+1. Clone this repository.
+2. Create an NTFS junction point from "HoloImpact-Shared\Assets\Shared" to the Asset folders for HoloImpact-Client and HoloImpact-Server.
   A. Command for HoloImpact-Client: mklink /J "C:\path\to\HoloImpact-Client\Assets\HoloImpact-Shared" "C:\path\to\HoloImpact-Shared\Assets\Shared"
   B. Command for HoloImpact-Server: mklink /J "C:\path\to\HoloImpact-Server\Assets\HoloImpact-Shared" "C:\path\to\HoloImpact-Shared\Assets\Shared"
-
+  
 +=============================+
 | #A.3.2 App Testing in Unity |
 +=============================+
