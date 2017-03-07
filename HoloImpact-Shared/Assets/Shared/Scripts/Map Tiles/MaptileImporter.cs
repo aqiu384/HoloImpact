@@ -11,10 +11,13 @@ public enum MaptileGridSize
     FiveByFive
 }
 
+/// <summary>
+/// Retrieves tile file names for the requested coordinates.
+/// If the tile files are not already present on the tile server,
+/// generates or downloads all necessary data before returning up.
+/// </summary>
 public class MaptileImporter
 {
-    public string imageTileUrlFormat = "http://ecn.t1.tiles.virtualearth.net/tiles/a{0}?g=5552";
-
     public MaptileImportConfiguration maptileServerConfig;
     private HeightmapImporter m_heightmapImporter;
 
@@ -70,7 +73,7 @@ public class MaptileImporter
         var outputFile = quadKey + maptileServerConfig.GetWorkingDirectoryFileExtension(MaptileWorkingDirectory.Image);
         var outputPath = maptileServerConfig.GetFullFilePath(MaptileWorkingDirectory.Image, quadKey);
 
-        webClient.DownloadFile(string.Format(imageTileUrlFormat, outputFile), outputPath);
+        webClient.DownloadFile(string.Format(maptileServerConfig.imageryUrlFormat, outputFile), outputPath);
     }
 
     public string GetMaptileQuadkey(int tileX, int tileY)

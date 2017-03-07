@@ -1,11 +1,12 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.Linq;
 
+/// <summary>
+/// GDAL's Nuget packages are targeted at .NET >=4.0, but Unity can only go up to 3.5.
+/// Naive Workaround: Install GDAL directly and use this wrapper classs to call
+/// only the necessary utilities.
+/// </summary>
 public class HeightmapImporter
 {
-    public int gdalCacheMax = 3000;
-    public string gdalExecutablePath = "C:/Program Files/GDAL";
-
     public MaptileImportConfiguration maptileServerConfig; 
 
     private enum GdalCommand
@@ -45,7 +46,7 @@ public class HeightmapImporter
             maptileServerConfig.GetFullFilePath(outputDir, outputFile)
         );
 
-        gdalStart.FileName = Path.Combine(gdalExecutablePath, GetGdalCommandName(gdalCommand));
+        gdalStart.FileName = maptileServerConfig.gdalDirectory + "/" +  GetGdalCommandName(gdalCommand);
         gdalStart.WorkingDirectory = maptileServerConfig.GetFullDirectoryPath(inputDir);
         
         gdalStart.CreateNoWindow = true;
@@ -77,8 +78,8 @@ public class HeightmapImporter
     {
         var args = new string[]
         {
-            "--config GDAL_CACHEMAX", gdalCacheMax.ToString(),
-            "-wm", gdalCacheMax.ToString(),
+            "--config GDAL_CACHEMAX", maptileServerConfig.gdalCacheMax.ToString(),
+            "-wm", maptileServerConfig.gdalCacheMax.ToString(),
             "-s_srs", "EPSG:4326",
             "-t_srs", "EPSG:3857",
             "-te_srs", "EPSG:4326",

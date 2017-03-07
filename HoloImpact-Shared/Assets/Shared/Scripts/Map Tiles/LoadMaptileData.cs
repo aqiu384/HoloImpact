@@ -1,22 +1,43 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
 using System.IO;
 using System.Collections;
 
+/// <summary>
+/// Downloads heightmap data and satellite imagery texture 
+/// and loads them into the given terrain.
+/// </summary>
+[RequireComponent(typeof(NetworkIdentity))]
 [RequireComponent(typeof(Terrain))]
-public class LoadMaptileData : MonoBehaviour
+public class LoadMaptileData : NetworkBehaviour
 {
+    [SyncVar]
     public Vector3 maptileSize;
+    [SyncVar]
     public int maptileResolution;
-    public string heightmapUrl, imageTileUrl;
-    public int tileX, tileY;
+    [SyncVar]
+    public string heightmapUrl;
+    [SyncVar]
+    public string imageTileUrl;
+    [SyncVar]
+    public int tileX;
+    [SyncVar]
+    public int tileY;
 
+    [SerializeField]
     private Terrain m_terrain;
+    [SerializeField]
     private TerrainData m_terrainData;
 
     protected virtual void Awake()
     {
         m_terrain = GetComponent<Terrain>();
         m_terrain.enabled = false;
+    }
+
+    public override void OnStartClient()
+    {
+        DownloadMaptileData();
     }
 
     public void DownloadMaptileData()

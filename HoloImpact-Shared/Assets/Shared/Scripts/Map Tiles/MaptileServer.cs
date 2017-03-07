@@ -2,53 +2,24 @@
 using System.Net;
 using System.IO;
 using System.Threading;
-using UnityEngine;
 
 /// <summary>
-/// Rudimentary tile server that sends terrain data to clients.
+/// Rudimentary tile server that sends heightmap and imagery data to clients.
 /// </summary>
-public class MapTileServer : MonoBehaviour
+public class MaptileServer
 {
-    private NetworkManagerFSM m_networkManagerFSM;
+    public MaptileImportConfiguration importConfiguration;
+
     private bool m_stopThread;
     private Thread m_thread;
     private object m_lock = new object();
 
-    public string listenAddress = "172.16.80.1";
-    public int listenPort = 7775;
-    public string mapTilesPath = "./MapTiles/";
     public int timeoutMilliseconds = 1000;
     public int bufferSize = 1024 * 8;
 
-    // public LatLong mapCenter { get; private set; }
-
-    private bool CheckPreconditions()
+    public MaptileServer(MaptileImportConfiguration importConfiguration)
     {
-        var manager = MyNetworkManager.Instance;
-
-        if (manager == null)
-        {
-            return false;
-        }
-
-        m_networkManagerFSM = manager.GetComponent<NetworkManagerFSM>();
-        m_networkManagerFSM.AddOnEnterListener(StartServer, NetworkManagerState.HostConnected);
-        m_networkManagerFSM.AddOnExitListener(StopServer, NetworkManagerState.HostConnected);
-
-        return true;
-    }
-
-    protected virtual void Start()
-    {
-        if (!CheckPreconditions())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnApplicationQuit()
-    {
-        StopServer();
+        this.importConfiguration = importConfiguration;
     }
 
     public void StartServer()
@@ -69,14 +40,12 @@ public class MapTileServer : MonoBehaviour
             m_thread.Join();
             m_thread = null;
         }
-
-        enabled = false;
     }
 
     private void ListenForMapClients()
     {
         var listener = new HttpListener();
-        listener.Prefixes.Add(string.Format("http://{0}:{1}/", listenAddress, listenPort));
+        listener.Prefixes.Add(importConfiguration.maptileServerAddress + "/");
         listener.Start();
 
         while (!m_stopThread)
@@ -92,7 +61,7 @@ public class MapTileServer : MonoBehaviour
     {
         var listener = (HttpListener)result.AsyncState;
         var context = listener.EndGetContext(result);
-        var filename = Path.Combine(mapTilesPath, context.Request.Url.AbsolutePath.Substring(1));
+        var filename = Path.Combine(importConfiguration.maptileDirectory, context.Request.Url.AbsolutePath.Substring(1));
         var response = context.Response;
 
         if (File.Exists(filename))

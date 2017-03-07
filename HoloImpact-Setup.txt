@@ -33,9 +33,55 @@
 2. Create an NTFS junction point from "HoloImpact-Shared\Assets\Shared" to the Asset folders for HoloImpact-Client and HoloImpact-Server.
   A. Command for HoloImpact-Client: mklink /J "C:\path\to\HoloImpact-Client\Assets\HoloImpact-Shared" "C:\path\to\HoloImpact-Shared\Assets\Shared"
   B. Command for HoloImpact-Server: mklink /J "C:\path\to\HoloImpact-Server\Assets\HoloImpact-Shared" "C:\path\to\HoloImpact-Shared\Assets\Shared"
+
++==========================+
+| #A.3.2 Tile Server Setup |
++==========================+
+
+1. Install Geospatial Data Abstraction Library (GDAL).
+  A. Overview: http://www.gdal.org/
+  B. Windows Setup Recommendation: Use installer found at OSGeo4W.
+    i. Link: https://trac.osgeo.org/osgeo4w/
+2. Setup tile server directories as follows:
+
+  TileServer
+   |_ EPSG3857
+   |_ EPSG4326
+   |_ RAW
+   |_ IMAGES
+   
+3. Download source SRTM dataset tiles in areas of interest.
+  A. Recommendation: Use SRTM Tile Grabber.
+    i. Link: http://dwtkns.com/srtm/
+  B. Extract and convert tiles from HGT format to TIFs using gdal_translate utiltiy.
+    i. Example: "C:\Program Files\GDAL\gdal_translate.exe" N32W117.hgt N32W117.tif
+  C. Move output TIFs to EPSG3857 directory:
   
+    TileServer
+     |_ EPSG3857
+	     |_ N32W117.tif
+		 |_ N32W118.tif
+		 |_ ...
+     |_ EPSG4326
+     |_ RAW
+     |_ IMAGES
+  
+4. Test if  tile server is set up correctly.
+  A. Open HoloImpact-Shared/TerrainImportTest.unity scene in Unity.
+  B. In the object hiearchy load "Maptile Spawner" into the inspector.
+  C. Under "Map Tile Input Config":
+    i. Set "Maptile Directory" to /path/to/TileServer
+	ii. Set "Gdal Directory" to /path/to/GDAL
+	iii. Set "Maptile Server Address" to a valid IP:Port for the tile server to listen on.
+  D. Start the scene.
+    i. A grid of map tiles should be loaded.
+	ii. Restart the game with different settings if further verification is needed.
+	iii. The number of tiles surrounding the map center can be changed through "Map Grid Size".
+	iv. Toggling "Use Local Tile Server" will switch the Maptile Spawner to querying the local file system instead of a dedicated HTTP server.
+5. Copy Maptile Spawner configuration to HololImpact-Shared.unity scene.
+
 +=============================+
-| #A.3.2 App Testing in Unity |
+| #A.3.3 App Testing in Unity |
 +=============================+
 
 1. Start "Test-Impact-Hub.exe"
@@ -50,7 +96,7 @@
     i. After a successful connection the client should replicate the terrain and vehicle data seen on the host instance.
 
 +===================================+
-| #A.3.2 HoloImpact-Client Controls |
+| #A.3.4 HoloImpact-Client Controls |
 +===================================+
 
 1. Emulating Hololens Input

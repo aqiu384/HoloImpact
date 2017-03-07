@@ -2,42 +2,81 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
+/// <summary>
+/// Spawns a grid of map tiles centered around the given coordinate.
+/// </summary>
+[RequireComponent(typeof(NetworkIdentity))]
 public class MaptileSpawner : MonoBehaviour
 {
     public GameObject maptilePrefab;
+    public Transform targetSpawnArea;
     public Vector3 mapCenter = new Vector3(-117.1611f, 0, 32.7157f);
     public Vector3 maptileSize = new Vector3(10.0f, 200.0f, 10.0f);
     public MaptileGridSize mapGridSize = MaptileGridSize.OneByOne;
+    public bool useLocalTileServer = true;
+
+    public MaptileImportConfiguration m_maptileImportConfig;
 
     private int m_mapPixelCenterX, m_mapPixelCenterY;
-    private MaptileImportConfiguration m_maptileImportConfig;
 
     private bool m_stopThread;
     private Thread m_thread;
     private object m_lock = new object();
     private Queue<string> m_quadKeys = new Queue<string>();
 
-    protected virtual void Start()
+    private MaptileServer maptileServer;
+
+    protected virtual void Awake()
     {
-        m_maptileImportConfig = new MaptileImportConfiguration();
+        GetComponent<NetworkIdentity>().serverOnly = true;
+    }
+
+    protected virtual void OnEnable()
+    {
+        if (useLocalTileServer)
+        {
+            m_maptileImportConfig.maptileServerAddress = "file:///" + m_maptileImportConfig.maptileDirectory;
+        }
+        else
+        {
+            maptileServer = new MaptileServer(m_maptileImportConfig);
+            maptileServer.StartServer();
+        }
+
         StartCoroutine(SpawnMaptilesCoroutine());
+    }
+
+    protected virtual void OnDisable()
+    {
+        if (maptileServer != null)
+        {
+            maptileServer.StopServer();
+            maptileServer = null;
+        }
+
+        StopAllCoroutines();
     }
 
     private void SpawnMaptile(int tileX, int tileY, string quadKey)
     {
-        var loadTerrainData = Instantiate(maptilePrefab).GetComponent<LoadMaptileData>();
-        loadTerrainData.transform.SetParent(transform, false);
+        var loadTerrainData = maptilePrefab.GetComponent<LoadMaptileData>();
 
         loadTerrainData.gameObject.name = quadKey;
         loadTerrainData.maptileSize = maptileSize;
         loadTerrainData.maptileResolution = m_maptileImportConfig.outputTileSize;
-        loadTerrainData.heightmapUrl = "file:///" + m_maptileImportConfig.GetFullFilePath(MaptileWorkingDirectory.Heightmap, quadKey);
-        loadTerrainData.imageTileUrl = "file:///" + m_maptileImportConfig.GetFullFilePath(MaptileWorkingDirectory.Image, quadKey);
+
+        loadTerrainData.heightmapUrl = m_maptileImportConfig.maptileServerAddress + "/" + m_maptileImportConfig.GetWebFilePath(MaptileWorkingDirectory.Heightmap, quadKey);
+        loadTerrainData.imageTileUrl = m_maptileImportConfig.maptileServerAddress + "/" + m_maptileImportConfig.GetWebFilePath(MaptileWorkingDirectory.Image, quadKey);
+
         loadTerrainData.tileX = tileX;
         loadTerrainData.tileY = tileY;
 
-        loadTerrainData.DownloadMaptileData();
+        var spawnedObject = Instantiate(loadTerrainData.gameObject);
+        NetworkServer.Spawn(spawnedObject);
+
+        spawnedObject.GetComponent<MyNetworkTransform>().SetParent(targetSpawnArea, false);
     }
 
     private IEnumerator SpawnMaptilesCoroutine()
