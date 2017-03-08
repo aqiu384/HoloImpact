@@ -1,11 +1,10 @@
-﻿/// <summary>
+﻿using UnityEngine;
+using System.Collections.Generic;
+
+/// <summary>
 /// Naive triangulation algorithm.
 /// Taken from http://wiki.unity3d.com/index.php?title=Triangulator
 /// </summary>
-
-using UnityEngine;
-using System.Collections.Generic;
-
 public class Triangulator
 {
     private List<Vector2> m_points = new List<Vector2>();

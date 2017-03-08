@@ -21,10 +21,13 @@ public class MapVisibilityController : MonoBehaviour
         GetComponent<Collider>().isTrigger = true;
         m_timeTransform = GetComponent<TransformOverTime>();
 
-        networkManagerFSM.AddOnEnterListener(PlayMapReloadAnimation, NetworkManagerState.HostConnected);
-        networkManagerFSM.AddOnEnterListener(PlayMapReloadAnimation, NetworkManagerState.ClientConnected);
-        networkManagerFSM.AddOnExitListener(PlayMapReloadAnimation, NetworkManagerState.HostConnected);
-        networkManagerFSM.AddOnExitListener(PlayMapReloadAnimation, NetworkManagerState.ClientConnected);
+        if (networkManagerFSM)
+        {
+            networkManagerFSM.AddOnEnterListener(PlayMapReloadAnimation, NetworkManagerState.HostConnected);
+            networkManagerFSM.AddOnEnterListener(PlayMapReloadAnimation, NetworkManagerState.ClientConnected);
+            networkManagerFSM.AddOnExitListener(PlayMapReloadAnimation, NetworkManagerState.HostConnected);
+            networkManagerFSM.AddOnExitListener(PlayMapReloadAnimation, NetworkManagerState.ClientConnected);
+        }
 
         transform.localPosition = initialMapPosition;
         transform.localScale = initialMapScale;

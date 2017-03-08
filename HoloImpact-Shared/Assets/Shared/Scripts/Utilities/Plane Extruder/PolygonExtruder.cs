@@ -1,9 +1,14 @@
 ﻿using System;
 using UnityEngine;
 
-public class TriangulatorTest : MonoBehaviour
+public class PolygonExtruder
 {
-    private Mesh TriangulatePolygon(float[,] points)
+    /// <summary>
+    /// Create polygon mesh from list of perimeter points.
+    /// </summary>
+    /// <param name="points">List of points along perimeter</param>
+    /// <returns></returns>
+    public static Mesh CreatePolygon(float[,] points)
     {
         var vertices2d = new Vector2[points.GetLength(0)];
         var vertices = new Vector3[points.GetLength(0)];
@@ -26,7 +31,13 @@ public class TriangulatorTest : MonoBehaviour
         return mesh;
     }
 
-    private void ExtrudePolygonMesh(Mesh mesh, float bottomDistance, float topDistance)
+    /// <summary>
+    /// Extrude polygon plane into a prism.
+    /// </summary>
+    /// <param name="mesh">Prism caps</param>
+    /// <param name="bottomDistance">Height from original polygon to extruded base</param>
+    /// <param name="topDistance">Height from original polygon to extruded top</param>
+    public static void ExtrudePolygon(Mesh mesh, float bottomDistance, float topDistance)
     {
         var topOffset = Vector3.up * topDistance;
         var bottomOffset = Vector3.up * bottomDistance;
@@ -99,27 +110,5 @@ public class TriangulatorTest : MonoBehaviour
         mesh.triangles = triangles2x;
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-    }
-
-    protected virtual void Awake()
-    {
-        var inputPoints = new float[,] {
-            { 0, 3 },
-            { 1, 1 },
-            { 3, 0 },
-            { 1, -1 },
-            { 0, -3 },
-            { -1, -1 },
-            { -3, 0 },
-            { -1, 1 }
-        };
-
-        var mesh = TriangulatePolygon(inputPoints);
-        ExtrudePolygonMesh(mesh, -1.0f, 1.0f);
-
-        var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-        meshRenderer.material = new Material(Shader.Find("Diffuse"));
-        var meshFilter = gameObject.AddComponent<MeshFilter>();
-        meshFilter.mesh = mesh;
     }
 }

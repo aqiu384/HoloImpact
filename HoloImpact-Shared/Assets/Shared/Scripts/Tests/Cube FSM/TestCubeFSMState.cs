@@ -1,0 +1,1 @@
+﻿public class TestCubeFSMState : FSMState<TestCubeState, TestCubeTransition> { }
